@@ -1,12 +1,15 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// CORS Configuration - Frontend ka URL allow karo
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://your-frontend-name.onrender.com'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // MongoDB Connection
@@ -51,6 +54,11 @@ const initializeCounters = async () => {
 };
 
 initializeCounters();
+
+// Health check route
+app.get('/', (req, res) => {
+  res.json({ message: '🪔 Diwali Wishes API is running!' });
+});
 
 // API Routes
 app.get('/api/counters', async (req, res) => {
@@ -108,14 +116,6 @@ app.get('/api/wishes', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
-
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-// Handle React routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
