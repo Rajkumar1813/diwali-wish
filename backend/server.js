@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
@@ -9,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-const MONGODB_URI = 'mongodb+srv://ohiabhist:duFoybPfg3hbfJPY@ohiabhist.zjaxj.mongodb.net/diwali-wishes?retryWrites=true&w=majority&appName=ohiabhist';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ohiabhist:duFoybPfg3hbfJPY@ohiabhist.zjaxj.mongodb.net/diwali-wishes?retryWrites=true&w=majority&appName=ohiabhist';
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully!'))
@@ -33,7 +34,7 @@ const wishSchema = new mongoose.Schema({
 
 const Wish = mongoose.model('Wish', wishSchema);
 
-// Initialize counters if they don't exist
+// Initialize counters
 const initializeCounters = async () => {
   try {
     const created = await Counter.findOne({ type: 'created' });
@@ -51,9 +52,7 @@ const initializeCounters = async () => {
 
 initializeCounters();
 
-// Routes
-
-// Get all counters
+// API Routes
 app.get('/api/counters', async (req, res) => {
   try {
     const counters = await Counter.find();
@@ -65,7 +64,6 @@ app.get('/api/counters', async (req, res) => {
   }
 });
 
-// Increment created counter
 app.post('/api/counters/created', async (req, res) => {
   try {
     const counter = await Counter.findOneAndUpdate(
@@ -79,7 +77,6 @@ app.post('/api/counters/created', async (req, res) => {
   }
 });
 
-// Increment opened counter
 app.post('/api/counters/opened', async (req, res) => {
   try {
     const counter = await Counter.findOneAndUpdate(
@@ -93,7 +90,6 @@ app.post('/api/counters/opened', async (req, res) => {
   }
 });
 
-// Create a new wish
 app.post('/api/wishes', async (req, res) => {
   try {
     const { from, to, message } = req.body;
@@ -104,12 +100,7 @@ app.post('/api/wishes', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-// backend/server.js
-app.use(cors({
-  origin: ['https://diwali-backend.onrender.com', 'http://localhost:3000'],
-  credentials: true
-}));
-// Get recent wishes
+
 app.get('/api/wishes', async (req, res) => {
   try {
     const wishes = await Wish.find().sort({ timestamp: -1 }).limit(10);
@@ -118,15 +109,16 @@ app.get('/api/wishes', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 // Serve static files from React build
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-// Handle React routing, return all requests to React app
+// Handle React routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-
 });
