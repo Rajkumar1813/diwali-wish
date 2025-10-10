@@ -1,7 +1,7 @@
 {
   "name": "diwali-backend",
   "version": "1.0.0",
-  "description": "Diwali Wishes Backend",
+  "description": "Diwali Wishes Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
