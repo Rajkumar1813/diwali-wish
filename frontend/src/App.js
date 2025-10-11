@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, Send, Users, Share2, Copy, Check, TrendingUp, Instagram } from 'lucide-react';
 
-//const API_URL = 'https://diwali-backend.onrender.com/api';
-//const API_URL = process.env.REACT_APP_API_URL || '/api';
-const API_URL = process.env.REACT_APP_API_URL || 'https://diwali-backend.onrender.com/api';
+const API_URL = process.env.REACT_APP_API_URL || window.location.origin + '/api';
+
 export default function App() {
   const [senderName, setSenderName] = useState('');
   const [receiverName, setReceiverName] = useState('');
@@ -438,7 +437,7 @@ export default function App() {
                 style={{ textShadow: '0 0 10px rgba(255, 215, 0, 0.5)' }}>
               Create Your Wish
             </h2>
-            <p className="text-yellow-100">Share the light of joy - {new Date().getFullYear()}</p>
+            <p className="text-yellow-100">Share the light of joy</p>
           </div>
 
           <div className="space-y-4">
@@ -699,7 +698,4 @@ export default function App() {
       `}</style>
     </div>
   );
-
 }
-
-
