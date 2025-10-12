@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, Send, Users, Share2, Copy, Check, TrendingUp, Instagram } from 'lucide-react';
 
-const API_URL = 'https://diwali-backend.onrender.com/api';
+const API_URL = 'https://diwali-backend.onrender.com';
 
 export default function App() {
   const [senderName, setSenderName] = useState('');
@@ -699,3 +699,4 @@ export default function App() {
     </div>
   );
 }
+
