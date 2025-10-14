@@ -264,7 +264,7 @@ export default function App() {
   };
 
   const shareOnInstagram = () => {
-    const text = `🪔 Happy Diwali! 🎆\n\nI created a personalized Diwali wish for you!\n\n${shareLink}\n\nCreate your own wish at this amazing app by @ohi_abhist\n\n#HappyDiwali #Diwali2024 #FestivalOfLights`;
+    const text = `🪔 Happy Diwali! 🎆\n\nI created a personalized Diwali wish for you!\n\n${shareLink}\n\nCreate your own wish at this amazing app by @ohi_abhist\n\n#HappyDiwali #Diwali2025 #FestivalOfLights`;
     
     // For mobile - try to open Instagram app
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
@@ -297,7 +297,7 @@ export default function App() {
   // Counter Display Component
   const CounterDisplay = () => (
     <div 
-      className="fixed bottom-4 left-4 z-50 p-4 rounded-2xl"
+      className="fixed bottom-4 left-4 z-50 p-1 rounded-2xl"
       style={{
         background: 'rgba(75, 0, 130, 0.4)',
         backdropFilter: 'blur(20px)',
@@ -699,5 +699,6 @@ export default function App() {
     </div>
   );
 }
+
 
 
