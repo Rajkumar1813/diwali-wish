@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -21,11 +22,10 @@ app.use(cors({
 app.use(express.json());
 
 // MongoDB Connection
-const MONGODB_URI = 'mongodb+srv://ohiabhist:duFoybPfg3hbfJPY@ohiabhist.zjaxj.mongodb.net/diwali-wishes?retryWrites=true&w=majority&appName=ohiabhist';
-// const MONGODB_URI ='mongodb+srv://rajkumar:Rajkumar1813@cluster0.b7gjfot.mongodb.net/';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://rajkumar:Rajkumar1813@cluster0.b7gjfot.mongodb.net/Diwali?retryWrites=true&w=majority';
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB Connected Successfully!'))
+  .then(() => console.log('✅ MongoDB Connected to Diwali DB Successfully!'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Counter Schema
@@ -120,7 +120,7 @@ app.post('/api/wishes', async (req, res) => {
 
 app.get('/api/wishes', async (req, res) => {
   try {
-    const wishes = await Wish.find().sort({ timestamp: -1 }).limit(10);
+    const wishes = await Wish.find().sort({ timestamp: -1 });
     res.json(wishes);
   } catch (error) {
     res.status(500).json({ error: error.message });

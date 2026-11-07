@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ohiabhist:duFoybPfg3hbfJPY@ohiabhist.zjaxj.mongodb.net/diwali-wishes?retryWrites=true&w=majority&appName=ohiabhist';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://rajkumar:Rajkumar1813@cluster0.b7gjfot.mongodb.net/Diwali?retryWrites=true&w=majority';
 
 async function backupDatabase() {
   console.log('⏳ Connecting to MongoDB Atlas...');

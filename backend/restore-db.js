@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Target MongoDB URI (pass as TARGET_URI or use default)
-const TARGET_URI = process.env.TARGET_URI || process.env.MONGODB_URI || 'mongodb+srv://ohiabhist:duFoybPfg3hbfJPY@ohiabhist.zjaxj.mongodb.net/diwali-wishes?retryWrites=true&w=majority&appName=ohiabhist';
+const TARGET_URI = process.env.TARGET_URI || process.env.MONGODB_URI || 'mongodb+srv://rajkumar:Rajkumar1813@cluster0.b7gjfot.mongodb.net/Diwali?retryWrites=true&w=majority';
 
 async function restoreDatabase() {
   const backupDir = path.join(__dirname, '..', 'backup');

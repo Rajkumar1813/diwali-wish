@@ -14,7 +14,7 @@ import {
   MessageCircle,
   X,
   Download,
-  Flame
+  Radio
 } from 'lucide-react';
 import { festiveAudio } from './utils/festiveAudio';
 import { downloadGreetingCard } from './utils/cardGenerator';
@@ -245,7 +245,7 @@ const ShareModal = React.memo(({
             Share on WhatsApp
           </button>
 
-          {/* Download Greeting Card as Image (NEW) */}
+          {/* Download Greeting Card as Image */}
           <button
             type="button"
             onClick={onDownloadImage}
@@ -284,6 +284,83 @@ const ShareModal = React.memo(({
   );
 });
 
+// --- CONTINUOUS AUTO-SCROLLING WISHES LIST (Seamless Infinite Loop with Pause on Hover) ---
+const AutoScrollWishesList = React.memo(({ wishes }) => {
+  const containerRef = useRef(null);
+  const isPausedRef = useRef(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || wishes.length === 0) return;
+
+    let animId = null;
+    let lastTime = performance.now();
+
+    const scrollLoop = (time) => {
+      const delta = (time - lastTime) / 1000;
+      lastTime = time;
+
+      if (!isPausedRef.current && el) {
+        // Smooth gentle continuous scroll (~26 pixels per second)
+        el.scrollTop += 26 * Math.min(delta, 0.08);
+
+        // When end reached, seamlessly restart from top
+        if (el.scrollTop >= el.scrollHeight - el.clientHeight - 2) {
+          el.scrollTop = 0;
+        }
+      }
+
+      animId = requestAnimationFrame(scrollLoop);
+    };
+
+    animId = requestAnimationFrame(scrollLoop);
+
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [wishes.length]);
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseEnter={() => { isPausedRef.current = true; }}
+      onMouseLeave={() => { isPausedRef.current = false; }}
+      onTouchStart={() => { isPausedRef.current = true; }}
+      onTouchEnd={() => { isPausedRef.current = false; }}
+      className="space-y-2.5 max-h-72 overflow-y-auto pr-1 select-none scroll-smooth"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+      title="Hover or touch to pause scrolling"
+    >
+      {wishes.map((w, idx) => (
+        <div
+          key={w._id || w.id || idx}
+          className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between gap-3 text-xs sm:text-sm transition-all hover:bg-white/10 hover:border-amber-400/40"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-xl flex-shrink-0">🪔</span>
+            <div className="min-w-0">
+              <p className="font-semibold text-amber-200 truncate">
+                {w.from} → {w.to}
+              </p>
+              {w.message && (
+                <p className="text-white/80 text-xs truncate mt-0.5 italic">"{w.message}"</p>
+              )}
+              {w.timestamp && (
+                <span className="text-[10px] text-amber-100/50 block mt-0.5">
+                  {typeof w.timestamp === 'string' && w.timestamp.includes('T')
+                    ? new Date(w.timestamp).toLocaleString()
+                    : w.timestamp}
+                </span>
+              )}
+            </div>
+          </div>
+          <Heart className="w-4 h-4 text-rose-400 flex-shrink-0 fill-rose-400/50" />
+        </div>
+      ))}
+    </div>
+  );
+});
+
 // ============================================================================
 // MAIN APPLICATION COMPONENT
 // ============================================================================
@@ -309,7 +386,7 @@ export default function App() {
     setTimeout(() => setToastMessage(''), 2500);
   }, []);
 
-  // Fetch counters on load
+  // Fetch counters on load & during live sync
   const fetchCounters = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/counters`);
@@ -331,7 +408,7 @@ export default function App() {
     }
   }, [fetchCounters]);
 
-  // Fetch recent wishes
+  // Fetch all wishes (Live, with no limit)
   const fetchWishes = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/wishes`);
@@ -341,13 +418,23 @@ export default function App() {
         setWishes(data);
       }
     } catch (error) {
-      console.warn('Could not fetch recent wishes:', error.message);
+      console.warn('Could not fetch wishes:', error.message);
     }
   }, []);
 
+  // LIVE REAL-TIME AUTO-SYNC WITHOUT PAGE REFRESH (Every 3 seconds)
   useEffect(() => {
     fetchCounters();
     fetchWishes();
+
+    const liveSyncTimer = setInterval(() => {
+      if (!document.hidden) {
+        fetchCounters();
+        fetchWishes();
+      }
+    }, 3000);
+
+    return () => clearInterval(liveSyncTimer);
   }, [fetchCounters, fetchWishes]);
 
   // Check URL parameters for customized view mode
@@ -394,7 +481,6 @@ export default function App() {
 
   // --------------------------------------------------------------------------
   // HIGH-PERFORMANCE CANVAS FIREWORKS ENGINE
-  // Zero ctx.shadowBlur, additive lighter blend, DPR capped, backward loop, visibility paused
   // --------------------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -559,11 +645,11 @@ export default function App() {
       from: trimmedSender,
       to: trimmedReceiver,
       message: trimmedMsg,
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date().toISOString()
     };
 
     // Optimistic UI update
-    setWishes((prev) => [newWish, ...prev.slice(0, 9)]);
+    setWishes((prev) => [newWish, ...prev]);
 
     // Save to backend
     try {
@@ -573,6 +659,7 @@ export default function App() {
         body: JSON.stringify(newWish)
       });
       incrementCounter('created');
+      fetchWishes(); // Immediate refresh
     } catch (error) {
       console.warn('Error saving wish to backend:', error);
     }
@@ -858,34 +945,26 @@ export default function App() {
             </form>
           </section>
 
-          {/* Recent Wishes Section */}
+          {/* Recent Wishes Section with LIVE Auto-Scroll */}
           {wishes.length > 0 && (
             <section className="w-full max-w-lg rounded-3xl bg-black/40 border border-amber-400/20 p-5 sm:p-6 backdrop-blur-md animate-entrance-up">
-              <h2 className="text-base sm:text-lg font-bold text-amber-300 mb-3 flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-400" />
-                Recent Wishes ({wishes.length})
-              </h2>
-              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                {wishes.map((w, idx) => (
-                  <div
-                    key={w._id || w.id || idx}
-                    className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3 text-xs sm:text-sm transition-colors hover:bg-white/10"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-lg flex-shrink-0">🪔</span>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-amber-200 truncate">
-                          {w.from} → {w.to}
-                        </p>
-                        {w.message && (
-                          <p className="text-white/70 text-xs truncate mt-0.5 italic">"{w.message}"</p>
-                        )}
-                      </div>
-                    </div>
-                    <Heart className="w-4 h-4 text-rose-400 flex-shrink-0 fill-rose-400/40" />
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-3.5">
+                <h2 className="text-base sm:text-lg font-bold text-amber-300 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-amber-400" />
+                  Recent Wishes ({wishes.length})
+                </h2>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-[11px] font-semibold text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                  <span>LIVE</span>
+                </div>
               </div>
+
+              {/* Continuous Auto-scrolling list of all wishes */}
+              <AutoScrollWishesList wishes={wishes} />
+
+              <p className="text-[10px] text-amber-200/40 text-center mt-3 italic">
+                ↕️ Auto-scrolling all wishes • Hover or touch to pause
+              </p>
             </section>
           )}
 
