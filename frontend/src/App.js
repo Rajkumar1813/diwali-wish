@@ -284,7 +284,7 @@ const ShareModal = React.memo(({
   );
 });
 
-// --- CONTINUOUS AUTO-SCROLLING WISHES LIST (Seamless Infinite Loop with Pause on Hover) ---
+// --- CONTINUOUS AUTO-SCROLLING WISHES LIST (Seamless Infinite Loop with Pause on Hover/Touch) ---
 const AutoScrollWishesList = React.memo(({ wishes }) => {
   const containerRef = useRef(null);
   const isPausedRef = useRef(false);
@@ -294,19 +294,30 @@ const AutoScrollWishesList = React.memo(({ wishes }) => {
     if (!el || wishes.length === 0) return;
 
     let animId = null;
+    let scrollPos = el.scrollTop;
     let lastTime = performance.now();
 
     const scrollLoop = (time) => {
-      const delta = (time - lastTime) / 1000;
+      const delta = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
 
       if (!isPausedRef.current && el) {
-        // Smooth gentle continuous scroll (~26 pixels per second)
-        el.scrollTop += 26 * Math.min(delta, 0.08);
+        // Continuous smooth advancement (~30 pixels per second)
+        scrollPos += 30 * delta;
 
-        // When end reached, seamlessly restart from top
-        if (el.scrollTop >= el.scrollHeight - el.clientHeight - 2) {
-          el.scrollTop = 0;
+        // If user manually scrolled, keep accumulator in sync
+        if (Math.abs(el.scrollTop - Math.round(scrollPos)) > 15) {
+          scrollPos = el.scrollTop;
+        }
+
+        const maxScroll = el.scrollHeight - el.clientHeight;
+        if (maxScroll > 4) {
+          if (scrollPos >= maxScroll) {
+            scrollPos = 0;
+            el.scrollTop = 0;
+          } else {
+            el.scrollTop = Math.round(scrollPos);
+          }
         }
       }
 
@@ -318,7 +329,7 @@ const AutoScrollWishesList = React.memo(({ wishes }) => {
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [wishes.length]);
+  }, [wishes]);
 
   return (
     <div
@@ -327,7 +338,7 @@ const AutoScrollWishesList = React.memo(({ wishes }) => {
       onMouseLeave={() => { isPausedRef.current = false; }}
       onTouchStart={() => { isPausedRef.current = true; }}
       onTouchEnd={() => { isPausedRef.current = false; }}
-      className="space-y-2.5 max-h-72 overflow-y-auto pr-1 select-none scroll-smooth"
+      className="space-y-2.5 h-[270px] overflow-y-auto pr-1 select-none"
       style={{ WebkitOverflowScrolling: 'touch' }}
       title="Hover or touch to pause scrolling"
     >
@@ -344,13 +355,6 @@ const AutoScrollWishesList = React.memo(({ wishes }) => {
               </p>
               {w.message && (
                 <p className="text-white/80 text-xs truncate mt-0.5 italic">"{w.message}"</p>
-              )}
-              {w.timestamp && (
-                <span className="text-[10px] text-amber-100/50 block mt-0.5">
-                  {typeof w.timestamp === 'string' && w.timestamp.includes('T')
-                    ? new Date(w.timestamp).toLocaleString()
-                    : w.timestamp}
-                </span>
               )}
             </div>
           </div>
@@ -386,10 +390,13 @@ export default function App() {
     setTimeout(() => setToastMessage(''), 2500);
   }, []);
 
-  // Fetch counters on load & during live sync
+  // Fetch counters on load & during live sync (Anti-cache for real-time freshness)
   const fetchCounters = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/counters`);
+      const response = await fetch(`${API_URL}/counters?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
       if (!response.ok) return;
       const data = await response.json();
       setCounters(data);
@@ -408,10 +415,13 @@ export default function App() {
     }
   }, [fetchCounters]);
 
-  // Fetch all wishes (Live, with no limit)
+  // Fetch all wishes (Live, anti-cache, no limit)
   const fetchWishes = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/wishes`);
+      const response = await fetch(`${API_URL}/wishes?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
       if (!response.ok) return;
       const data = await response.json();
       if (Array.isArray(data)) {
@@ -422,7 +432,7 @@ export default function App() {
     }
   }, []);
 
-  // LIVE REAL-TIME AUTO-SYNC WITHOUT PAGE REFRESH (Every 3 seconds)
+  // LIVE REAL-TIME AUTO-SYNC WITHOUT PAGE REFRESH (Every 2 seconds)
   useEffect(() => {
     fetchCounters();
     fetchWishes();
@@ -432,7 +442,7 @@ export default function App() {
         fetchCounters();
         fetchWishes();
       }
-    }, 3000);
+    }, 2000);
 
     return () => clearInterval(liveSyncTimer);
   }, [fetchCounters, fetchWishes]);

@@ -21,6 +21,15 @@ app.use(cors({
 
 app.use(express.json());
 
+// Disable all caching for real-time live data
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surrogate-Control', 'no-store');
+  next();
+});
+
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://rajkumar:Rajkumar1813@cluster0.b7gjfot.mongodb.net/Diwali?retryWrites=true&w=majority';
 
