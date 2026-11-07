@@ -116,10 +116,13 @@ app.post('/api/counters/opened', async (req, res) => {
   }
 });
 
+const DEFAULT_WISH_MESSAGE = "Wishing you and your family a very Happy, Prosperous, and Joyful Diwali! May this festival of lights bring happiness, good health, peace, and success into your lives.";
+
 app.post('/api/wishes', async (req, res) => {
   try {
-    const { from, to, message } = req.body;
-    const wish = new Wish({ from, to, message });
+    let { from, to, message } = req.body;
+    const finalMessage = (message && message.trim()) ? message.trim() : DEFAULT_WISH_MESSAGE;
+    const wish = new Wish({ from, to, message: finalMessage });
     await wish.save();
     res.json(wish);
   } catch (error) {

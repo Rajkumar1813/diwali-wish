@@ -10,7 +10,8 @@ export function downloadGreetingCard({ senderName, receiverName, message }) {
 
   const sender = senderName?.trim() || 'Well Wisher';
   const receiver = receiverName?.trim() || 'Friend';
-  const customMsg = message?.trim() || 'May the divine light of Diwali bring peace, prosperity, health and boundless happiness to you and your family!';
+  const defaultWish = "Wishing you and your family a very Happy, Prosperous, and Joyful Diwali! May this festival of lights bring happiness, good health, peace, and success into your lives.";
+  const customMsg = message?.trim() || defaultWish;
 
   // 1. Royal Deep Background Gradient (Navy to Maroon)
   const bgGrad = ctx.createRadialGradient(540, 540, 100, 540, 540, 750);

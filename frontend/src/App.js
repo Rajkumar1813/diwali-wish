@@ -25,6 +25,9 @@ const API_URL =
     ? 'http://localhost:5000/api'
     : 'https://diwali-backend.onrender.com/api');
 
+const DEFAULT_WISH_MESSAGE =
+  "Wishing you and your family a very Happy, Prosperous, and Joyful Diwali! May this festival of lights bring happiness, good health, peace, and success into your lives.";
+
 // --- PURE VECTOR SVG DIYA COMPONENT (GPU Accelerated, 0 Canvas Cost) ---
 const DiyaSvg = React.memo(({ size = 'md', className = '' }) => {
   const dims = {
@@ -458,7 +461,7 @@ export default function App() {
       setViewMode('view');
       setSenderName(decodeURIComponent(from));
       setReceiverName(decodeURIComponent(to));
-      setMessage(msg ? decodeURIComponent(msg) : '');
+      setMessage(msg ? decodeURIComponent(msg) : DEFAULT_WISH_MESSAGE);
       incrementCounter('opened');
     }
   }, [incrementCounter]);
@@ -649,7 +652,7 @@ export default function App() {
 
     const trimmedSender = senderName.trim();
     const trimmedReceiver = receiverName.trim();
-    const trimmedMsg = message.trim();
+    const trimmedMsg = message.trim() || DEFAULT_WISH_MESSAGE;
 
     const newWish = {
       from: trimmedSender,
@@ -716,7 +719,7 @@ export default function App() {
     downloadGreetingCard({
       senderName,
       receiverName,
-      message
+      message: message.trim() || DEFAULT_WISH_MESSAGE
     });
     setTimeout(() => {
       showToast('Greeting Card Downloaded! ✨');
@@ -809,11 +812,9 @@ export default function App() {
             </p>
 
             {/* Custom Message Card */}
-            {message ? (
-              <div className="rounded-2xl bg-amber-500/10 border border-amber-400/25 p-4 sm:p-5 mb-6 text-amber-100 text-sm sm:text-base italic leading-relaxed">
-                "{message}"
-              </div>
-            ) : null}
+            <div className="rounded-2xl bg-amber-500/10 border border-amber-400/25 p-4 sm:p-5 mb-6 text-amber-100 text-sm sm:text-base italic leading-relaxed">
+              "{message || DEFAULT_WISH_MESSAGE}"
+            </div>
 
             {/* Traditional Blessing */}
             <div className="space-y-1 text-sm sm:text-base text-yellow-100/80 mb-6">
@@ -940,7 +941,7 @@ export default function App() {
                   maxLength={200}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Wishing you good health, abundant success, and peace this Diwali!"
+                  placeholder="Personal message (optional - a warm festive wish will be sent if left empty)"
                   className="w-full px-4 py-3 rounded-xl bg-black/40 border border-amber-400/30 text-white placeholder-amber-100/30 text-sm sm:text-base focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors resize-none"
                 />
               </div>
