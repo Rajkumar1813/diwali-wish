@@ -1,12 +1,20 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const dns = require('dns');
+
+// Configure DNS to ensure MongoDB Atlas SRV resolution succeeds
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  console.warn('DNS server config warning:', e.message);
+}
 
 const app = express();
 
-// CORS Configuration - Frontend ka URL allow karo
+// CORS Configuration - Support both local development and production URLs
 app.use(cors({
-  origin: ['https://diwali-frontend.onrender.com','*'],
+  origin: true,
   credentials: true
 }));
 
