@@ -1,6 +1,7 @@
 // Festive Ambient Audio Synthesizer using Web Audio API
 // Zero external files, zero network latency, 0 KB payload, no 404s or CORS issues.
 // Plays gentle Indian classical temple bells & meditative tanpura-like acoustic drone on pentatonic scale (Raag Bhupali).
+// Also synthesizes real-time interactive firecracker / patakha burst sounds!
 
 class FestiveAudioSynthesizer {
   constructor() {
@@ -12,6 +13,7 @@ class FestiveAudioSynthesizer {
     this.chimeTimer = null;
     // Pentatonic scale frequencies: C4, D4, E4, G4, A4, C5, D5
     this.notes = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33];
+    this.soundEffectsEnabled = true;
   }
 
   init() {
@@ -99,6 +101,80 @@ class FestiveAudioSynthesizer {
     osc.stop(now + 2.6);
   }
 
+  // Realistic Patakha / Cracker Burst Sound Effect (Instant Web Audio synthesis)
+  playCrackerBurst() {
+    if (!this.soundEffectsEnabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+
+    try {
+      const now = this.ctx.currentTime;
+
+      // 1. Deep Bass Explosion Boom (140Hz to 32Hz pitch drop)
+      const boomOsc = this.ctx.createOscillator();
+      const boomGain = this.ctx.createGain();
+      boomOsc.type = 'sine';
+      boomOsc.frequency.setValueAtTime(140, now);
+      boomOsc.frequency.exponentialRampToValueAtTime(32, now + 0.32);
+
+      boomGain.gain.setValueAtTime(0.3, now);
+      boomGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+      boomOsc.connect(boomGain);
+      boomGain.connect(this.ctx.destination);
+      boomOsc.start(now);
+      boomOsc.stop(now + 0.33);
+
+      // 2. High-Frequency Crackle/Snap (Noise Buffer)
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.12);
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const whiteNoise = this.ctx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+
+      const noiseFilter = this.ctx.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.setValueAtTime(1200 + Math.random() * 800, now);
+      noiseFilter.Q.setValueAtTime(2.5, now);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.22, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      whiteNoise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(this.ctx.destination);
+      whiteNoise.start(now);
+      whiteNoise.stop(now + 0.13);
+
+      // 3. Secondary Sparkles (Micro Crackles)
+      for (let s = 1; s <= 2; s++) {
+        const popTime = now + 0.06 + Math.random() * 0.12;
+        const popOsc = this.ctx.createOscillator();
+        const popGain = this.ctx.createGain();
+        popOsc.type = 'triangle';
+        popOsc.frequency.setValueAtTime(700 + Math.random() * 800, popTime);
+        popGain.gain.setValueAtTime(0.06, popTime);
+        popGain.gain.exponentialRampToValueAtTime(0.0001, popTime + 0.05);
+
+        popOsc.connect(popGain);
+        popGain.connect(this.ctx.destination);
+        popOsc.start(popTime);
+        popOsc.stop(popTime + 0.06);
+      }
+    } catch (e) {
+      // Audio playback fails silently if user has not interacted with DOM yet
+    }
+  }
+
   stop() {
     if (!this.isPlaying) return;
     this.isPlaying = false;
@@ -138,4 +214,3 @@ class FestiveAudioSynthesizer {
 }
 
 export const festiveAudio = new FestiveAudioSynthesizer();
-

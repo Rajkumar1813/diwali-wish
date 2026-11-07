@@ -13,9 +13,11 @@ import {
   Sparkles,
   MessageCircle,
   X,
-  ExternalLink
+  Download,
+  Flame
 } from 'lucide-react';
 import { festiveAudio } from './utils/festiveAudio';
+import { downloadGreetingCard } from './utils/cardGenerator';
 
 const API_URL =
   process.env.REACT_APP_API_URL ||
@@ -142,7 +144,7 @@ const CounterDisplay = React.memo(({ created, opened }) => (
   </div>
 ));
 
-// --- MEMOIZED MUSIC TOGGLE (Pleasant Web Audio Ambient Sound) ---
+// --- MEMOIZED MUSIC & SOUND TOGGLE ---
 const MusicToggle = React.memo(({ isPlaying, onToggle }) => (
   <button
     type="button"
@@ -185,17 +187,19 @@ const InstagramBadge = React.memo(() => (
   </a>
 ));
 
-// --- MEMOIZED SHARE MODAL ---
+// --- MEMOIZED SHARE & DOWNLOAD MODAL ---
 const ShareModal = React.memo(({
   isOpen,
   onClose,
   shareLink,
   receiverName,
   senderName,
+  message,
   onCopy,
   copied,
   onWhatsApp,
-  onInstagram
+  onInstagram,
+  onDownloadImage
 }) => {
   if (!isOpen) return null;
 
@@ -225,7 +229,7 @@ const ShareModal = React.memo(({
         </div>
 
         {/* Link Box */}
-        <div className="bg-black/40 border border-amber-400/20 rounded-xl p-3 mb-5 text-xs text-amber-100/90 break-all select-all font-mono">
+        <div className="bg-black/40 border border-amber-400/20 rounded-xl p-3 mb-4 text-xs text-amber-100/90 break-all select-all font-mono">
           {shareLink}
         </div>
 
@@ -241,6 +245,16 @@ const ShareModal = React.memo(({
             Share on WhatsApp
           </button>
 
+          {/* Download Greeting Card as Image (NEW) */}
+          <button
+            type="button"
+            onClick={onDownloadImage}
+            className="w-full min-h-[48px] py-3 px-5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-transform active:scale-98 hover:brightness-105"
+          >
+            <Download className="w-5 h-5" />
+            Download Card as Image (PNG) 🪔
+          </button>
+
           {/* Copy Button */}
           <button
             type="button"
@@ -248,7 +262,7 @@ const ShareModal = React.memo(({
             className={`w-full min-h-[48px] py-3 px-5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-transform active:scale-98 ${
               copied
                 ? 'bg-emerald-600 text-white'
-                : 'bg-gradient-to-r from-amber-400 to-amber-500 text-stone-900 shadow-md shadow-amber-500/20 hover:brightness-105'
+                : 'bg-white/10 border border-amber-400/30 text-amber-200 hover:bg-white/15'
             }`}
           >
             {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -287,6 +301,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState('');
 
   const canvasRef = useRef(null);
+  const spawnUserFireworkRef = useRef(null);
 
   // Show transient toast
   const showToast = useCallback((msg) => {
@@ -357,6 +372,26 @@ export default function App() {
     setIsMusicPlaying(newState);
   }, []);
 
+  // Trigger Patakha Burst Sound & Fireworks on Click/Tap
+  const handleScreenInteraction = useCallback((e) => {
+    // Prevent triggering when clicking form inputs, buttons, textareas, or links
+    const targetTag = e.target.tagName;
+    if (['INPUT', 'BUTTON', 'TEXTAREA', 'A'].includes(targetTag) || e.target.closest('button') || e.target.closest('input')) {
+      return;
+    }
+
+    const x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : null);
+    const y = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+
+    // 1. Play Patakha sound effect
+    festiveAudio.playCrackerBurst();
+
+    // 2. Spawn spark burst at cursor position
+    if (x !== null && y !== null && spawnUserFireworkRef.current) {
+      spawnUserFireworkRef.current(x, y);
+    }
+  }, []);
+
   // --------------------------------------------------------------------------
   // HIGH-PERFORMANCE CANVAS FIREWORKS ENGINE
   // Zero ctx.shadowBlur, additive lighter blend, DPR capped, backward loop, visibility paused
@@ -392,22 +427,22 @@ export default function App() {
     resizeCanvas();
 
     const particles = [];
-    const colors = ['#ffd700', '#ffb703', '#fb8500', '#ff007f', '#00f5d4', '#7b2cbf', '#ffffff'];
+    const colors = ['#ffd700', '#ffb703', '#fb8500', '#ff007f', '#00f5d4', '#7b2cbf', '#ffffff', '#ff4d6d'];
 
     class Particle {
-      constructor(x, y, color) {
+      constructor(x, y, color, isUserBurst = false) {
         this.x = x;
         this.y = y;
         this.color = color;
-        const speed = 1.5 + Math.random() * 4.5;
+        const speed = isUserBurst ? 2.5 + Math.random() * 5.5 : 1.5 + Math.random() * 4.5;
         const angle = Math.random() * Math.PI * 2;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
         this.alpha = 1;
-        this.decay = 0.012 + Math.random() * 0.014;
+        this.decay = 0.014 + Math.random() * 0.016;
         this.gravity = 0.06;
         this.friction = 0.965;
-        this.radius = 1.8 + Math.random() * 1.6;
+        this.radius = 1.8 + Math.random() * 1.8;
       }
 
       update() {
@@ -428,12 +463,17 @@ export default function App() {
       }
     }
 
-    const createFirework = (x, y) => {
-      if (particles.length > maxParticles) return; // Cap maximum active particles
+    const createFirework = (x, y, count = burstCount, isUserBurst = false) => {
+      if (particles.length > maxParticles && !isUserBurst) return;
       const color = colors[Math.floor(Math.random() * colors.length)];
-      for (let i = 0; i < burstCount; i++) {
-        particles.push(new Particle(x, y, color));
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle(x, y, color, isUserBurst));
       }
+    };
+
+    // Expose interactive user tap burst to outer ref
+    spawnUserFireworkRef.current = (cx, cy) => {
+      createFirework(cx, cy, isLowTier ? 28 : 42, true);
     };
 
     let animationFrameId = null;
@@ -496,6 +536,7 @@ export default function App() {
       clearInterval(intervalId);
       window.removeEventListener('resize', resizeCanvas);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      spawnUserFireworkRef.current = null;
     };
   }, []);
 
@@ -506,6 +547,9 @@ export default function App() {
       showToast('Please enter both your name and recipient name!');
       return;
     }
+
+    // Play celebration cracker sound on wish creation
+    festiveAudio.playCrackerBurst();
 
     const trimmedSender = senderName.trim();
     const trimmedReceiver = receiverName.trim();
@@ -568,6 +612,20 @@ export default function App() {
     }, 600);
   };
 
+  // Download Wish Card as HD Image
+  const handleDownloadCard = () => {
+    festiveAudio.playCrackerBurst();
+    showToast('Generating HD Greeting Card... 🪔');
+    downloadGreetingCard({
+      senderName,
+      receiverName,
+      message
+    });
+    setTimeout(() => {
+      showToast('Greeting Card Downloaded! ✨');
+    }, 800);
+  };
+
   // Switch to Create Mode from View Mode
   const handleCreateNewWish = () => {
     window.history.pushState({}, '', window.location.pathname);
@@ -578,7 +636,11 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-x-hidden bg-[#070010] text-white flex flex-col justify-between">
+    <div
+      onClick={handleScreenInteraction}
+      onTouchStart={handleScreenInteraction}
+      className="relative min-h-[100dvh] w-full overflow-x-hidden bg-[#070010] text-white flex flex-col justify-between cursor-crosshair selection:bg-amber-500 selection:text-black"
+    >
       {/* Background Fireworks Canvas */}
       <canvas
         ref={canvasRef}
@@ -594,6 +656,12 @@ export default function App() {
       <MusicToggle isPlaying={isMusicPlaying} onToggle={toggleMusic} />
       <InstagramBadge />
 
+      {/* Interactive Sound Hint Badge */}
+      <div className="fixed bottom-4 left-4 z-40 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[11px] text-amber-200/80 pointer-events-none hidden sm:flex items-center gap-1.5">
+        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <span>Tap screen to burst patakhas!</span>
+      </div>
+
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -605,24 +673,26 @@ export default function App() {
         </div>
       )}
 
-      {/* Share Modal */}
+      {/* Share & Download Modal */}
       <ShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         shareLink={shareLink}
         receiverName={receiverName}
         senderName={senderName}
+        message={message}
         onCopy={handleCopyLink}
         copied={copied}
         onWhatsApp={handleWhatsAppShare}
         onInstagram={handleInstagramShare}
+        onDownloadImage={handleDownloadCard}
       />
 
       {/* ============================================================== */}
       {/* VIEW MODE: When recipient opens personalized link              */}
       {/* ============================================================== */}
       {viewMode === 'view' ? (
-        <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 pt-20 pb-20">
+        <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 pt-20 pb-20 cursor-default">
           <div className="w-full max-w-lg rounded-3xl bg-gradient-to-b from-[#1b0026]/90 via-[#12001c]/90 to-[#070010]/95 border border-amber-400/30 p-6 sm:p-10 shadow-2xl shadow-amber-500/10 text-center animate-entrance-up backdrop-blur-md">
             {/* Top Diya */}
             <div className="flex justify-center -mt-2 mb-4">
@@ -662,27 +732,40 @@ export default function App() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                type="button"
-                onClick={handleCreateNewWish}
-                className="flex-1 min-h-[48px] py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-stone-950 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-transform active:scale-95 hover:brightness-105"
-              >
-                <Sparkles className="w-4 h-4" />
-                Create Your Own Wish
-              </button>
+            <div className="flex flex-col gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Download Greeting as Image */}
+                <button
+                  type="button"
+                  onClick={handleDownloadCard}
+                  className="flex-1 min-h-[48px] py-3 px-5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-stone-950 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-transform active:scale-95 hover:brightness-105"
+                >
+                  <Download className="w-4 h-4 text-stone-950" />
+                  Save as Image (PNG) 🪔
+                </button>
 
+                <button
+                  type="button"
+                  onClick={handleCreateNewWish}
+                  className="flex-1 min-h-[48px] py-3 px-5 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/15 border border-amber-400/30 text-amber-200 flex items-center justify-center gap-2 transition-colors active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  Create Your Own Wish
+                </button>
+              </div>
+
+              {/* Copy Greeting Link */}
               <button
                 type="button"
                 onClick={() => {
                   const url = window.location.href;
                   navigator.clipboard.writeText(url);
-                  showToast('Wish link copied!');
+                  showToast('Wish link copied! ✨');
                 }}
-                className="min-h-[48px] py-3 px-5 rounded-xl text-sm font-semibold bg-white/10 hover:bg-white/15 border border-white/20 text-white flex items-center justify-center gap-2 transition-colors active:scale-95"
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-xl text-xs font-semibold bg-black/40 hover:bg-black/60 border border-white/15 text-white/80 flex items-center justify-center gap-2 transition-colors active:scale-95"
               >
                 <Copy className="w-4 h-4 text-amber-300" />
-                Copy Greeting
+                Copy Greeting Link
               </button>
             </div>
           </div>
@@ -691,7 +774,7 @@ export default function App() {
         /* ============================================================== */
         /* CREATE MODE: Default View to make & share wishes               */
         /* ============================================================== */
-        <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 pt-20 pb-20 max-w-3xl mx-auto w-full">
+        <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 pt-20 pb-20 max-w-3xl mx-auto w-full cursor-default">
           {/* Hero Section */}
           <header className="text-center mb-8 sm:mb-10 animate-entrance-up">
             <div className="flex justify-center mb-3">

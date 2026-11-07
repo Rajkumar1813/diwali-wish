@@ -22,7 +22,7 @@ app.use(express.json());
 
 // MongoDB Connection
 const MONGODB_URI = 'mongodb+srv://ohiabhist:duFoybPfg3hbfJPY@ohiabhist.zjaxj.mongodb.net/diwali-wishes?retryWrites=true&w=majority&appName=ohiabhist';
-// const MONGODB_URI ='mongodb+srv://ohiabhist:duFoybPfg3hbfJPY@ohiabhist.zjaxj.mongodb.net/diwali-wishes?retryWrites=true&w=majority&appName=ohiabhist';
+// const MONGODB_URI ='mongodb+srv://rajkumar:Rajkumar1813@cluster0.b7gjfot.mongodb.net/';
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully!'))
