@@ -125,7 +125,7 @@ cd diwali-wish
 Create a `.env` file inside the `backend/` directory:
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://rajkumar:Rajkumar1813@cluster0.b7gjfot.mongodb.net/Diwali?retryWrites=true&w=majority
+MONGODB_URI=your_mongodb_atlas_connection_string
 ```
 
 ### 3. Run Backend Server
