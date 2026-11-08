@@ -248,14 +248,14 @@ const ShareModal = React.memo(({
             Share on WhatsApp
           </button>
 
-          {/* Download Greeting Card as Image */}
+          {/* Download Greeting Card Button */}
           <button
             type="button"
             onClick={onDownloadImage}
             className="w-full min-h-[48px] py-3 px-5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-transform active:scale-98 hover:brightness-105"
           >
             <Download className="w-5 h-5" />
-            Download Card as Image (PNG) 🪔
+            Download Greeting Card
           </button>
 
           {/* Copy Button */}
@@ -290,6 +290,7 @@ const ShareModal = React.memo(({
 // --- CONTINUOUS AUTO-SCROLLING WISHES LIST (Seamless Infinite Loop with Pause on Hover/Touch) ---
 const AutoScrollWishesList = React.memo(({ wishes }) => {
   const containerRef = useRef(null);
+  const firstBlockRef = useRef(null);
   const isPausedRef = useRef(false);
 
   useEffect(() => {
@@ -304,20 +305,20 @@ const AutoScrollWishesList = React.memo(({ wishes }) => {
       const delta = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
 
-      if (!isPausedRef.current && el) {
-        // Continuous smooth advancement (~30 pixels per second)
-        scrollPos += 30 * delta;
+      if (!isPausedRef.current && el && firstBlockRef.current) {
+        // Continuous smooth advancement (~26 pixels per second)
+        scrollPos += 26 * delta;
 
         // If user manually scrolled, keep accumulator in sync
         if (Math.abs(el.scrollTop - Math.round(scrollPos)) > 15) {
           scrollPos = el.scrollTop;
         }
 
-        const maxScroll = el.scrollHeight - el.clientHeight;
-        if (maxScroll > 4) {
-          if (scrollPos >= maxScroll) {
-            scrollPos = 0;
-            el.scrollTop = 0;
+        const loopHeight = firstBlockRef.current.offsetHeight + 10;
+        if (loopHeight > 40 && wishes.length > 1) {
+          if (scrollPos >= loopHeight) {
+            scrollPos = scrollPos - loopHeight;
+            el.scrollTop = Math.round(scrollPos);
           } else {
             el.scrollTop = Math.round(scrollPos);
           }
@@ -334,6 +335,28 @@ const AutoScrollWishesList = React.memo(({ wishes }) => {
     };
   }, [wishes]);
 
+  if (wishes.length === 0) return null;
+
+  const renderCard = (w, idx, keyPrefix = '') => (
+    <div
+      key={`${keyPrefix}${w._id || w.id || idx}`}
+      className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between gap-3 text-xs sm:text-sm transition-all hover:bg-white/10 hover:border-amber-400/40"
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-xl flex-shrink-0">🪔</span>
+        <div className="min-w-0">
+          <p className="font-semibold text-amber-200 truncate">
+            {w.from} → {w.to}
+          </p>
+          {w.message && (
+            <p className="text-white/80 text-xs truncate mt-0.5 italic">"{w.message}"</p>
+          )}
+        </div>
+      </div>
+      <Heart className="w-4 h-4 text-rose-400 flex-shrink-0 fill-rose-400/50" />
+    </div>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -341,29 +364,18 @@ const AutoScrollWishesList = React.memo(({ wishes }) => {
       onMouseLeave={() => { isPausedRef.current = false; }}
       onTouchStart={() => { isPausedRef.current = true; }}
       onTouchEnd={() => { isPausedRef.current = false; }}
-      className="space-y-2.5 h-[270px] overflow-y-auto pr-1 select-none"
+      className="h-[210px] overflow-y-auto pr-1 select-none"
       style={{ WebkitOverflowScrolling: 'touch' }}
       title="Hover or touch to pause scrolling"
     >
-      {wishes.map((w, idx) => (
-        <div
-          key={w._id || w.id || idx}
-          className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between gap-3 text-xs sm:text-sm transition-all hover:bg-white/10 hover:border-amber-400/40"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-xl flex-shrink-0">🪔</span>
-            <div className="min-w-0">
-              <p className="font-semibold text-amber-200 truncate">
-                {w.from} → {w.to}
-              </p>
-              {w.message && (
-                <p className="text-white/80 text-xs truncate mt-0.5 italic">"{w.message}"</p>
-              )}
-            </div>
-          </div>
-          <Heart className="w-4 h-4 text-rose-400 flex-shrink-0 fill-rose-400/50" />
+      <div ref={firstBlockRef} className="flex flex-col gap-2.5">
+        {wishes.map((w, idx) => renderCard(w, idx, 'a-'))}
+      </div>
+      {wishes.length > 1 && (
+        <div className="flex flex-col gap-2.5 mt-2.5">
+          {wishes.map((w, idx) => renderCard(w, idx, 'b-'))}
         </div>
-      ))}
+      )}
     </div>
   );
 });
@@ -678,9 +690,7 @@ export default function App() {
     }
 
     const baseUrl = window.location.origin + window.location.pathname;
-    const generatedLink = `${baseUrl}?from=${encodeURIComponent(trimmedSender)}&to=${encodeURIComponent(
-      trimmedReceiver
-    )}${trimmedMsg ? '&msg=' + encodeURIComponent(trimmedMsg) : ''}`;
+    const generatedLink = `${baseUrl}?from=${encodeURIComponent(trimmedSender)}&to=${encodeURIComponent(trimmedReceiver)}`;
 
     setShareLink(generatedLink);
     setShowShareModal(true);
@@ -832,14 +842,14 @@ export default function App() {
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 justify-center">
               <div className="flex flex-col sm:flex-row gap-3">
-                {/* Download Greeting as Image */}
+                {/* Download Greeting Card Button */}
                 <button
                   type="button"
                   onClick={handleDownloadCard}
                   className="flex-1 min-h-[48px] py-3 px-5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-stone-950 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-transform active:scale-95 hover:brightness-105"
                 >
                   <Download className="w-4 h-4 text-stone-950" />
-                  Save as Image (PNG) 🪔
+                  Download Greeting Card
                 </button>
 
                 <button
@@ -856,8 +866,9 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  const url = window.location.href;
-                  navigator.clipboard.writeText(url);
+                  const baseUrl = window.location.origin + window.location.pathname;
+                  const cleanUrl = `${baseUrl}?from=${encodeURIComponent(senderName)}&to=${encodeURIComponent(receiverName)}`;
+                  navigator.clipboard.writeText(cleanUrl);
                   showToast('Wish link copied! ✨');
                 }}
                 className="w-full min-h-[44px] py-2.5 px-4 rounded-xl text-xs font-semibold bg-black/40 hover:bg-black/60 border border-white/15 text-white/80 flex items-center justify-center gap-2 transition-colors active:scale-95"
@@ -956,13 +967,13 @@ export default function App() {
             </form>
           </section>
 
-          {/* Recent Wishes Section with LIVE Auto-Scroll */}
+          {/* Recent Wishes Section with LIVE Auto-Scroll (Latest 4) */}
           {wishes.length > 0 && (
             <section className="w-full max-w-lg rounded-3xl bg-black/40 border border-amber-400/20 p-5 sm:p-6 backdrop-blur-md animate-entrance-up">
               <div className="flex items-center justify-between mb-3.5">
                 <h2 className="text-base sm:text-lg font-bold text-amber-300 flex items-center gap-2">
                   <Users className="w-5 h-5 text-amber-400" />
-                  Recent Wishes ({wishes.length})
+                  Recent Wishes ({wishes.slice(0, 4).length})
                 </h2>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-[11px] font-semibold text-emerald-400">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
@@ -970,11 +981,11 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Continuous Auto-scrolling list of all wishes */}
-              <AutoScrollWishesList wishes={wishes} />
+              {/* Continuous Auto-scrolling list of latest 4 wishes */}
+              <AutoScrollWishesList wishes={wishes.slice(0, 4)} />
 
               <p className="text-[10px] text-amber-200/40 text-center mt-3 italic">
-                ↕️ Auto-scrolling all wishes • Hover or touch to pause
+                ↕️ Auto-scrolling latest wishes • Hover or touch to pause
               </p>
             </section>
           )}
